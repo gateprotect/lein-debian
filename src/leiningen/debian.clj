@@ -1,11 +1,6 @@
 (ns leiningen.debian
   (:require [clojure.string :as str]))
 
-(defn- get-artifact-id
-  [dependency]
-  (if-let [dep-str (and dependency (name dependency))]
-    (last (str/split dep-str #"/"))))
-
 (defn- scope-allowed?
   [project m]
   (or  (not= (:scope m) "test")
