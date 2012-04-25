@@ -1,20 +1,11 @@
-(ns leiningen.test.debian
+(ns lein-debian.test.package
   (:use [clojure.test :only (deftest)]
         [midje.sweet]
-        [leiningen.debian]))
-
-(deftest get-artifact-id-test
-  (facts
-   (#'leiningen.debian/get-artifact-id nil)        => nil
-   (#'leiningen.debian/get-artifact-id 'a)         => "a"
-   (#'leiningen.debian/get-artifact-id 'a/b)       => "b"
-   (#'leiningen.debian/get-artifact-id 'a.b/c)     => "c"
-   (#'leiningen.debian/get-artifact-id 'a.b.c/d)   => "d"
-   (#'leiningen.debian/get-artifact-id ['a.b.c/d]) => (throws ClassCastException)))
+        [lein-debian.package]))
 
 (deftest get-dependencies-test
   (facts
-   (#'leiningen.debian/get-dependencies
+   (#'lein-debian.package/get-dependencies
     {:dependencies [['a.b/c "x"]
                     ['a.b/c "x" :debian nil]
                     ['a.b/c "x" :debian ["d"]]
@@ -27,6 +18,6 @@
                                                         ["liba-java" "x"]
                                                         ["b" nil]
                                                         ["liba-java" nil]]
-   (#'leiningen.debian/get-dependencies
+   (#'lein-debian.package/get-dependencies
     {:dependencies [['a.b/c "x" :scope "test"]
                     ['a.b.c "y"]]})                  => [["liba.b.c-java" "y"]]))

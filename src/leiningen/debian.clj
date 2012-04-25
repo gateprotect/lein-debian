@@ -1,33 +1,20 @@
 (ns leiningen.debian
-  (:require [clojure.string :as str]))
-
-(defn- scope-allowed?
-  [project m]
-  (or  (not= (:scope m) "test")
-       (:package-test-dependencies project)))
-
-(defn- build-debian-name
-  [project dependency version args]
-  (let [artifactId (get-artifact-id dependency)
-        m          (and (not-empty args) (apply assoc {} args))]
-    (if (scope-allowed? project m)
-      (if (contains? m :debian)
-        (if-let [override (:debian m)]
-          [(first override) (second override)])
-        [(str "lib" artifactId "-java") version]))))
-
-(defn- get-dependencies
-  [project]
-  (filter (comp not nil?)
-          (for [[dependency version & rest] (:dependencies project)]
-            (let [[version rest]            (if (keyword? version)
-                                              [nil (conj rest version)]
-                                              [version rest])]
-              (build-debian-name project dependency version rest)))))
+  (:use     [lein-debian.common]))
 
 (defn debian
-  "Generates a Debian package for build products"
+  "Generates a Debian package for build products
+USAGE: lein debian <TASK>
+where <TASK> can be any of:
+package : creates a Debian package as per the configuration specified
+          in project.clj
+"
   [project & args]
-  (println (get-dependencies project)))
-
-
+  (let [[task & rest] args]
+    (if task
+      (let [task-ns-sym (symbol (str "lein-debian." task))
+            -           (require task-ns-sym)
+            task-ns     (find-ns task-ns-sym)]
+        (if-let [funk (and task-ns (->> task symbol (ns-resolve task-ns)))]
+          (funk project args)
+          (err "unknown task" task)))
+      (err "no task was specified. Try lein help debian"))))

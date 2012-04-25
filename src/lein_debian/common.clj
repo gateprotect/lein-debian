@@ -1,5 +1,6 @@
 (ns lein-debian.common
-  (:require [clojure.string :as str]))
+  (:use     [clojure.java.io :only (writer)])
+  (:require [clojure.string   :as   str]))
 
 ;;; version separator character
 ;;; (used to separate the name from the version in a debian dependency property
@@ -17,7 +18,17 @@
 (def debian-cd      "debian-cd-3.1.7")
 (def arches         "i386")
 
-(def maintainer             "Oster Hase <osterhase@rapanui.com>")
+(def debfullname
+  (or (System/getenv "DEBFULLNAME")
+      "Oster Hase"))
+
+(def debemail
+  (or (System/getenv "DEBEMAIL")
+      "osterhase@rapanui.com"))
+
+(def maintainer
+  (str debfullname " <" debemail ">"))
+
 (def section                "contrib")
 (def priority               "optional")
 (def build-depends          "debhelper (>= 7.0.50~)")
@@ -37,14 +48,30 @@
   [element & more-elements]
   (str/join "/" (conj more-elements element)))
 
+(defn build-debian-version
+  [version build-num]
+  (let [version (str/replace version "-SNAPSHOT" "")]
+    (str/join [version (if build-num (str "." build-num))])))
+
 (defn make-version
   [project]
   (let [version   (:version project)
         build-num (:build-number project)]
-    (str/join [version (if build-num (str "." build-num))])))
+    (build-debian-version version build-num)))
 
 (defn get-artifact-id
   [dependency]
   (if-let [dep-str (and dependency (name dependency))]
-    (last (str/split dep-str #"/"))))
+    (str "lib"
+         (str/replace (last (str/split dep-str #"/")) "." "-")
+         "-clojure")))
 
+(defn err
+  [& args]
+  (binding [*out* *err*]
+    (apply println args)))
+
+(defn write-lines
+  [file coll]
+  (with-open [stream (writer file)]
+    (.write stream (apply str (map #(str %1 "\n") coll)))))
