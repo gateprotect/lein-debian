@@ -12,12 +12,12 @@
                     ['a.b/c "x" :debian ["d" "y"]]
                     ['a "x"]
                     ['a :debian ["b"]]
-                    ['a]]})                         => [["libc-java" "x"]
+                    ['a]]})                         => [["libc-clojure" "x"]
                                                         ["d" nil]
                                                         ["d" "y"]
-                                                        ["liba-java" "x"]
+                                                        ["liba-clojure" "x"]
                                                         ["b" nil]
-                                                        ["liba-java" nil]]
+                                                        ["liba-clojure" nil]]
    (#'lein-debian.package/get-dependencies
     {:dependencies [['a.b/c "x" :scope "test"]
-                    ['a.b.c "y"]]})                  => [["liba.b.c-java" "y"]]))
+                    ['a.b.c "y"]]})                  => [["liba-b-c-clojure" "y"]]))

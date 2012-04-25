@@ -50,8 +50,9 @@
 
 (defn build-debian-version
   [version build-num]
-  (let [version (str/replace version "-SNAPSHOT" "")]
-    (str/join [version (if build-num (str "." build-num))])))
+  (if version
+    (let [version (str/replace version "-SNAPSHOT" "")]
+      (str/join [version (if build-num (str "." build-num))]))))
 
 (defn make-version
   [project]
