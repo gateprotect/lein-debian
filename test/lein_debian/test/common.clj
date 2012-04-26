@@ -5,10 +5,10 @@
 
 (deftest get-artifact-id-test
   (facts
-   (get-artifact-id nil)        => nil
-   (get-artifact-id 'a)         => "liba-clojure"
-   (get-artifact-id 'a/b)       => "libb-clojure"
-   (get-artifact-id 'a.b/c)     => "libc-clojure"
-   (get-artifact-id 'a.b.c/d)   => "libd-clojure"
-   (get-artifact-id ['a.b.c/d]) => (throws ClassCastException)))
+   (get-debian-name nil)        => nil
+   (get-debian-name 'a)         => "liba-clojure"
+   (get-debian-name 'a/b)       => "libb-clojure"
+   (get-debian-name 'a.b/c)     => "libc-clojure"
+   (get-debian-name 'a.b.c/d)   => "libd-clojure"
+   (get-debian-name ['a.b.c/d]) => (throws ClassCastException)))
 

@@ -1,12 +1,19 @@
 (ns leiningen.debian
   (:use     [lein-debian.common]))
 
-(defn debian
+(defn ^:no-project-needed debian
   "Generates a Debian package for build products
 USAGE: lein debian <TASK>
 where <TASK> can be any of:
-package : creates a Debian package as per the configuration specified
-          in project.clj
+package : with no arguments, creates a Debian package as per the configuration
+          specified in project.clj. Otherwise, arguments are interpreted as
+          follows:
+          groupId/artifactId version
+          optional arguments:
+            :name         <debian name>
+            :version      <debian version>
+            :repositories <\"comma separated list of repositories to search.
+                             default is maven central and clojars>
 "
   [project & args]
   (let [[task & rest] args]

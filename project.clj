@@ -4,4 +4,6 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :eval-in-leiningen true
-  :dependencies [[midje "1.3.1" :scope "test"]])
+  :dependencies [[org.clojure/clojure "1.3.0"]
+                 [com.cemerick/pomegranate "0.0.11"]
+                 [midje "1.3.1" :scope "test"]])

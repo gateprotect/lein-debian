@@ -57,10 +57,10 @@
 (defn make-version
   [project]
   (let [version   (:version project)
-        build-num (:build-number project)]
+        build-num (:build-number project (System/getenv "BUILD_NUMBER"))]
     (build-debian-version version build-num)))
 
-(defn get-artifact-id
+(defn get-debian-name
   [dependency]
   (if-let [dep-str (and dependency (name dependency))]
     (str "lib"
