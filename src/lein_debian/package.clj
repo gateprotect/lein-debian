@@ -182,26 +182,28 @@
 
 (defn package
   [project args]
-  (if-not (empty args)
-    (and (jar/jar project)
-         (build-package project))
-    (let [[artifact-id version & rest] (next args)
-          artifact-id  (symbol artifact-id)
-          config       (if-not (empty? rest)
-                         (reduce (fn [m [k v]]
-                                   (assoc m (keywordize k) v)) {} (partition 2 rest)))
-          coordinates  [artifact-id version]
-          repositories (or (parse-repositories config)
-                           (merge cemerick.pomegranate.aether/maven-central
-                                  {"clojars" "http://clojars.org/repo"}))
-          dependencies (resolve-dependencies
-                             :coordinates  [coordinates]
-                             :repositories repositories)
-          jar-file     (-> dependencies (find coordinates) first meta :file get-filename)]
-      (build-package
-       (assoc project
-         :debian
-         {:name    (:name config (get-debian-name artifact-id))
-          :version (:version config version)
-          :files   jar-file}
-         :dependencies (get dependencies coordinates))))))
+  (let [args (next args) ]
+    (if-not (empty args)
+      (and (jar/jar project)
+           (build-package project))
+      (let [[artifact-id version & rest] args
+            artifact-id  (symbol artifact-id)
+            config       (if-not (empty? rest)
+                           (reduce (fn [m [k v]]
+                                     (assoc m (keywordize k) v)) {} (partition 2 rest)))
+            coordinates  [artifact-id version]
+            repositories (or (parse-repositories config)
+                             (merge cemerick.pomegranate.aether/maven-central
+                                    {"clojars" "http://clojars.org/repo"}))
+            dependencies (resolve-dependencies
+                          :coordinates  [coordinates]
+                          :repositories repositories)
+            jar-file     (-> dependencies (find coordinates) first meta :file get-filename)]
+        (build-package
+         (merge {:debian config}
+                (assoc project
+                  :debian
+                  {:name    (:name config (get-debian-name artifact-id))
+                   :version (:version config version)
+                   :files   jar-file}
+                  :dependencies (get dependencies coordinates))))))))
