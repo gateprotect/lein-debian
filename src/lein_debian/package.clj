@@ -52,6 +52,12 @@
                (build-debian-name project dependency version rest))))
    (get-in project [:debian :dependencies])))
 
+(defn- link-artifact
+  [files artifact-id]
+  (let [re            (java.util.regex.Pattern/compile (str artifact-id "-.*.jar"))
+        artifact-file (str artifact-id "-*.jar")]
+    (str "\t@cd $(INSTALLDIR) && ln -snf " artifact-file " " artifact-id ".jar")))
+
 (defn maybe-from-script
   [commands]
   (let [commands (str/trim commands)]
@@ -96,8 +102,9 @@
 (defn build-package
   [project]
   (let [dependencies         (get-dependencies project)
+        artifact-id          (:name project)
         config               (:debian project)
-        pkg-name             (:name config (get-debian-name (:name project)))
+        pkg-name             (:name config (get-debian-name artifact-id))
         version              (make-version (if (contains? config :version) config project))
         base-dir             (str/trim (:out (sh "pwd")))
         target-dir           (:target-path project (path base-dir target-subdir))
@@ -105,7 +112,7 @@
         debian-dir           (path package-dir "debian")
         install-dir          (:install-dir config install-dir)
         arch                 (:architecture config architecture)
-        dists                (:distributions config [dist])]
+        dists                (:distributions config [distribution])]
     (sh mkdir "-p" debian-dir)
     (write-lines (path debian-dir "control")
                  [(str "Source: "            pkg-name)
@@ -148,7 +155,8 @@
                             ["\t@cd" target-dir "&&"
                              copy "-a"
                              (str/replace (:files config files) #"\s+" " ")
-                             "$(INSTALLDIR)"])])
+                             "$(INSTALLDIR)"])
+                  (link-artifact files artifact-id)])
     
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
