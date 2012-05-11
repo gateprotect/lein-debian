@@ -104,7 +104,8 @@
         package-dir          (path target-dir (str pkg-name "-" version))
         debian-dir           (path package-dir "debian")
         install-dir          (:install-dir config install-dir)
-        arch                 (:architecture config architecture)]
+        arch                 (:architecture config architecture)
+        dists                (:distributions config [dist])]
     (sh mkdir "-p" debian-dir)
     (write-lines (path debian-dir "control")
                  [(str "Source: "            pkg-name)
@@ -124,7 +125,7 @@
       (apply println "Depends on" (map package-spec dependencies)))
 
     (write-lines (path debian-dir "changelog")
-                 [(str pkg-name " (" version ") unstable; urgency=low")
+                 [(str pkg-name " (" version ") " (str/join " " dists)  "; urgency=low")
                   ""
                   "  * Initial Release."
                   ""

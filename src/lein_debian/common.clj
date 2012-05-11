@@ -41,8 +41,8 @@
 (def install-dir            "/usr/share/java")
 (def apt-config-file        "config/apt.conf")
 (def apt-move-config-file   "config/apt-move.conf")
-(def dist                   "squeeze")
-(def pkg-config-file        (str "config/" dist "-packages.conf"))
+(def distribution           "squeeze")
+(def pkg-config-file        (str "config/" distribution "-packages.conf"))
 
 (defn path
   [element & more-elements]
