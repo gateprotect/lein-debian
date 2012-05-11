@@ -43,12 +43,14 @@
 
 (defn- get-dependencies
   [project]
-  (filter (comp not nil?)
-          (for [[dependency version & rest] (:dependencies project)]
-            (let [[version rest]            (if (keyword? version)
-                                              [nil (conj rest version)]
-                                              [version rest])]
-              (build-debian-name project dependency version rest)))))
+  (concat
+   (filter (comp not nil?)
+           (for [[dependency version & rest] (:dependencies project)]
+             (let [[version rest]            (if (keyword? version)
+                                               [nil (conj rest version)]
+                                               [version rest])]
+               (build-debian-name project dependency version rest))))
+   (get-in project [:debian :dependencies])))
 
 (defn maybe-from-script
   [commands]
