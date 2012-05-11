@@ -43,12 +43,14 @@
 
 (defn- get-dependencies
   [project]
-  (filter (comp not nil?)
-          (for [[dependency version & rest] (:dependencies project)]
-            (let [[version rest]            (if (keyword? version)
-                                              [nil (conj rest version)]
-                                              [version rest])]
-              (build-debian-name project dependency version rest)))))
+  (concat
+   (filter (comp not nil?)
+           (for [[dependency version & rest] (:dependencies project)]
+             (let [[version rest]            (if (keyword? version)
+                                               [nil (conj rest version)]
+                                               [version rest])]
+               (build-debian-name project dependency version rest))))
+   (get-in project [:debian :dependencies])))
 
 (defn maybe-from-script
   [commands]
@@ -200,10 +202,9 @@
                           :repositories repositories)
             jar-file     (-> dependencies (find coordinates) first meta :file get-filename)]
         (build-package
-         (merge {:debian config}
-                (assoc project
-                  :debian
-                  {:name    (:name config (get-debian-name artifact-id))
-                   :version (:version config version)
-                   :files   jar-file}
-                  :dependencies (get dependencies coordinates))))))))
+         (assoc project
+           :debian (merge config
+                          {:name    (:name config (get-debian-name artifact-id))
+                           :version (:version config version)
+                           :files   jar-file})
+           :dependencies (get dependencies coordinates)))))))
