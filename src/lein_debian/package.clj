@@ -202,10 +202,9 @@
                           :repositories repositories)
             jar-file     (-> dependencies (find coordinates) first meta :file get-filename)]
         (build-package
-         (merge {:debian config}
-                (assoc project
-                  :debian
-                  {:name    (:name config (get-debian-name artifact-id))
-                   :version (:version config version)
-                   :files   jar-file}
-                  :dependencies (get dependencies coordinates))))))))
+         (assoc project
+           :debian (merge config
+                          {:name    (:name config (get-debian-name artifact-id))
+                           :version (:version config version)
+                           :files   jar-file})
+           :dependencies (get dependencies coordinates)))))))
