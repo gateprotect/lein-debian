@@ -81,3 +81,7 @@
   [file coll]
   (with-open [stream (writer file)]
     (.write stream (apply str (map #(str %1 "\n") coll)))))
+
+(defn write-lines*
+  [file & lines]
+  (write-lines file lines))
