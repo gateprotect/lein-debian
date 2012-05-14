@@ -46,7 +46,12 @@
 
 (defn path
   [element & more-elements]
-  (str/join "/" (conj more-elements element)))
+  (reduce (fn [path s]
+            (if (.endsWith path "/")
+              (str path s)
+              (str path "/" s)))
+          element
+          more-elements))
 
 (defn build-debian-version
   [version build-num]
