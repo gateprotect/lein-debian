@@ -131,32 +131,34 @@
     (when-not (empty? dependencies)
       (apply println "Depends on" (map package-spec dependencies)))
 
-    (write-lines (path debian-dir "changelog")
-                 [(str pkg-name " (" version ") " (str/join " " dists)  "; urgency=low")
-                  ""
-                  "  * Initial Release."
-                  ""
-                  (str " -- "
-                       (:maintainer config maintainer) "  "
-                       (.format (SimpleDateFormat. "EEE, d MMM yyyy HH:mm:ss Z"
-                                                   (Locale/CANADA)) (Date.)))])
-    (write-lines (path debian-dir "rules")
-                 ["#!/usr/bin/make -f"
-                  "%:"
-                  "\tdh $@"])
-
-    (write-lines (path package-dir "Makefile")
-                 [(str "INSTALLDIR := $(DESTDIR)/" install-dir)
-                  "build:"
-                  ""
-                  "install:"
-                  "\t@mkdir -p $(INSTALLDIR)"
-                  (str/join " "
-                            ["\t@cd" target-dir "&&"
-                             copy "-a"
-                             (str/replace (:files config files) #"\s+" " ")
-                             "$(INSTALLDIR)"])
-                  (link-artifact files artifact-id)])
+    (write-lines* (path debian-dir "changelog")
+      (str pkg-name " (" version ") " (str/join " " dists)  "; urgency=low")
+      ""
+      "  * Initial Release."
+      ""
+      (str " -- "
+           (:maintainer config maintainer) "  "
+           (.format (SimpleDateFormat. "EEE, d MMM yyyy HH:mm:ss Z"
+                                       (Locale/CANADA)) (Date.))))
+    
+    (write-lines* (path debian-dir "rules")
+      "#!/usr/bin/make -f"
+      "%:"
+      "\tdh $@")
+    
+    (write-lines* (path package-dir "Makefile")
+      (str "INSTALLDIR := " (path "$(DESTDIR)" install-dir))
+      "build:"
+      ""
+      "install:"
+      "\t@mkdir -p $(INSTALLDIR)"
+      (str/join " "
+        (concat
+          ["\t@cd" target-dir "&&"
+           copy "-a"]
+          (map (partial path base-dir) (:files config files))
+          ["$(INSTALLDIR)"]))
+      (link-artifact files artifact-id))
     
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
@@ -215,5 +217,5 @@
            :debian (merge config
                           {:name    (:name config (get-debian-name artifact-id))
                            :version (:version config version)
-                           :files   jar-file})
+                           :files   [jar-file]})
            :dependencies (get dependencies coordinates)))))))
