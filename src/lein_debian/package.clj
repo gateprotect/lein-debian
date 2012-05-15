@@ -106,7 +106,7 @@
         config               (:debian project)
         pkg-name             (:name config (get-debian-name artifact-id))
         version              (make-version (if (contains? config :version) config project))
-        base-dir             (str/trim (:out (sh "pwd")))
+        base-dir             (:root project (str/trim (:out (sh "pwd"))))
         target-dir           (:target-path project (path base-dir target-subdir))
         package-dir          (path target-dir (str pkg-name "-" version))
         debian-dir           (path package-dir "debian")
