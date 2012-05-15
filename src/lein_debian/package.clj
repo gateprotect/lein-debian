@@ -156,7 +156,7 @@
         (concat
           ["\t@cd" target-dir "&&"
            copy "-a"]
-          (map (partial path base-dir) (:files config files))
+          (map (partial path base-dir) (conj (:files config []) files))
           ["$(INSTALLDIR)"]))
       (link-artifact files artifact-id))
     
@@ -168,7 +168,7 @@
         (err (:out r)
              "\nFailed to build Debian package. Errors follow:\n"
              (:err r))
-        (println "Created" (str target-dir "/" pkg-name "_" version "_" arch ".deb")))))  )
+        (println "Created" (str target-dir "/" pkg-name "_" version "_" arch ".deb"))))))
 
 (defn- get-filename
   [f]
