@@ -57,9 +57,15 @@
              (build-debian-name project dependency version rest)))
    (get-in project [:debian :dependencies])))
 
-(defn- config->files [config]
-  (concat (:extra-files config)
-          (:files config [files])))
+(defn- copy-files [from to & args]
+  (if (empty? args)
+    ""
+    (str/join " "
+      (concat
+       ["\t@cd" from "&&"
+        copy "-a" "--parents"]
+       args
+       [to]))))
 
 (defn- link-artifact
   [files artifact-id]
@@ -116,6 +122,7 @@
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
+        extras-dir   (path base-dir (:extra-path config "debian"))
         target-dir   (:target-path project (path base-dir target-subdir))
         package-dir  (path target-dir (str pkg-name "-" version))
         debian-dir   (path package-dir "debian")
@@ -161,16 +168,9 @@
       ""
       "install:"
       "\t@mkdir -p $(INSTALLDIR)"
-      (str/join " "
-        (concat
-          ["\t@cd" target-dir "&&"
-           copy "-a"]
-          (map (fn [f]
-                 (path (if (.startsWith f "/") "/" base-dir) f))
-               (config->files config))
-          ["$(INSTALLDIR)"]))
+      (copy-files target-dir "$(INSTALLDIR)" (:files config files))
+      (apply copy-files extras-dir "$(DESTDIR)" (:extra-files config))
       (link-artifact files artifact-id))
-    
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
     (sh rm "-fr" "debhelper.log" :dir debian-dir )
