@@ -52,6 +52,10 @@
                (build-debian-name project dependency version rest))))
    (get-in project [:debian :dependencies])))
 
+(defn- config->files [config]
+  (concat (:extra-files config)
+          (:files config [files])))
+
 (defn- link-artifact
   [files artifact-id]
   (let [re            (java.util.regex.Pattern/compile (str artifact-id "-.*.jar"))
@@ -106,7 +110,7 @@
         config               (:debian project)
         pkg-name             (:name config (get-debian-name artifact-id))
         version              (make-version (if (contains? config :version) config project))
-        base-dir             (str/trim (:out (sh "pwd")))
+        base-dir             (:root project (str/trim (:out (sh "pwd"))))
         target-dir           (:target-path project (path base-dir target-subdir))
         package-dir          (path target-dir (str pkg-name "-" version))
         debian-dir           (path package-dir "debian")
@@ -156,7 +160,7 @@
         (concat
           ["\t@cd" target-dir "&&"
            copy "-a"]
-          (map (partial path base-dir) (:files config files))
+          (map (partial path base-dir) (config->files config))
           ["$(INSTALLDIR)"]))
       (link-artifact files artifact-id))
     
@@ -168,7 +172,7 @@
         (err (:out r)
              "\nFailed to build Debian package. Errors follow:\n"
              (:err r))
-        (println "Created" (str target-dir "/" pkg-name "_" version "_" arch ".deb")))))  )
+        (println "Created" (str target-dir "/" pkg-name "_" version "_" arch ".deb"))))))
 
 (defn- get-filename
   [f]
