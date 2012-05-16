@@ -52,6 +52,10 @@
                (build-debian-name project dependency version rest))))
    (get-in project [:debian :dependencies])))
 
+(defn- config->files [config]
+  (concat (:extra-files config)
+          (:files config [files])))
+
 (defn- link-artifact
   [files artifact-id]
   (let [re            (java.util.regex.Pattern/compile (str artifact-id "-.*.jar"))
@@ -156,7 +160,7 @@
         (concat
           ["\t@cd" target-dir "&&"
            copy "-a"]
-          (map (partial path base-dir) (conj (:files config []) files))
+          (map (partial path base-dir) (config->files config))
           ["$(INSTALLDIR)"]))
       (link-artifact files artifact-id))
     
