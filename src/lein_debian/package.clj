@@ -108,18 +108,18 @@
 
 (defn build-package
   [project]
-  (let [dependencies         (get-dependencies project)
-        artifact-id          (:name project)
-        config               (:debian project)
-        pkg-name             (:name config (get-debian-name artifact-id))
-        version              (make-version (if (contains? config :version) config project))
-        base-dir             (:root project (str/trim (:out (sh "pwd"))))
-        target-dir           (:target-path project (path base-dir target-subdir))
-        package-dir          (path target-dir (str pkg-name "-" version))
-        debian-dir           (path package-dir "debian")
-        install-dir          (:install-dir config install-dir)
-        arch                 (:architecture config architecture)
-        dists                (:distributions config [distribution])]
+  (let [dependencies (get-dependencies project)
+        artifact-id  (:name project)
+        config       (:debian project)
+        pkg-name     (:name config (get-debian-name artifact-id))
+        version      (make-version (if (contains? config :version) config project))
+        base-dir     (:root project (str/trim (:out (sh "pwd"))))
+        target-dir   (:target-path project (path base-dir target-subdir))
+        package-dir  (path target-dir (str pkg-name "-" version))
+        debian-dir   (path package-dir "debian")
+        install-dir  (:install-dir config install-dir)
+        arch         (:architecture config architecture)
+        dists        (:distributions config [distribution])]
     (sh mkdir "-p" debian-dir)
     (write-lines (path debian-dir "control")
                  [(str "Source: "            pkg-name)
@@ -163,7 +163,9 @@
         (concat
           ["\t@cd" target-dir "&&"
            copy "-a"]
-          (map (partial path base-dir) (config->files config))
+          (map (fn [f]
+                 (path (if (.startsWith f "/") "/" base-dir) f))
+               (config->files config))
           ["$(INSTALLDIR)"]))
       (link-artifact files artifact-id))
     
@@ -179,7 +181,7 @@
 
 (defn- get-filename
   [f]
-  (.toString f))
+  (when f (.toString f)))
 
 (defn- parse-repositories
   "Given a string of the form repo1=url1,repo2=url2,... returns a map of the form
@@ -203,7 +205,7 @@
 (defn package
   [project args]
   (let [args (next args) ]
-    (if-not (empty args)
+    (if (nil? args)
       (and (jar/jar project)
            (build-package project))
       (let [[artifact-id version & rest] args
@@ -214,15 +216,17 @@
             coordinates  [artifact-id version]
             repositories (or (parse-repositories config)
                              (merge cemerick.pomegranate.aether/maven-central
-                                    {"clojars" "http://clojars.org/repo"}))
+                                    {"clojars" "http://clojars.org/repo"}
+                                    (:repositories project)))
             dependencies (resolve-dependencies
                           :coordinates  [coordinates]
                           :repositories repositories)
             jar-file     (-> dependencies (find coordinates) first meta :file get-filename)]
-        (build-package
-         (assoc project
-           :debian (merge config
-                          {:name    (:name config (get-debian-name artifact-id))
-                           :version (:version config version)
-                           :files   [jar-file]})
-           :dependencies (get dependencies coordinates)))))))
+        (when-not (:dry-run config)
+          (build-package
+           (assoc project
+             :debian (merge config
+                            {:name    (:name config (get-debian-name artifact-id))
+                             :version (:version config version)
+                             :files   [jar-file]})
+             :dependencies (get dependencies coordinates))))))))
