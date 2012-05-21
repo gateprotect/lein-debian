@@ -32,24 +32,27 @@
 
 (defn- build-debian-name
   [project dependency version args]
-  (let [artifact-id (get-debian-name dependency)
-        m           (and (not-empty args) (apply assoc {} args))]
+  (let [artifact-id           (get-debian-name dependency)
+        m                     (and (not-empty args) (apply assoc {} args))
+        override              (:debian m)
+        [artifact-id version] (if override
+                                (let [[deb-name deb-ver] override
+                                      deb-ver            (if-not (nil? deb-ver)
+                                                           (if (= deb-ver "")
+                                                             nil
+                                                             deb-ver)
+                                                           version)]
+                                  [deb-name deb-ver])
+                                [artifact-id version])]
     (if (scope-allowed? project m)
-      (if (contains? m :debian)
-        (if-let [override (:debian m)]
-          [(first override) (second override)])
-        [artifact-id
-         (build-debian-version version (:build-number project))]))))
+      [artifact-id (build-debian-version version (:build-number project))])))
 
 (defn- get-dependencies
   [project]
   (concat
    (filter (comp not nil?)
            (for [[dependency version & rest] (:dependencies project)]
-             (let [[version rest]            (if (keyword? version)
-                                               [nil (conj rest version)]
-                                               [version rest])]
-               (build-debian-name project dependency version rest))))
+             (build-debian-name project dependency version rest)))
    (get-in project [:debian :dependencies])))
 
 (defn- config->files [config]
