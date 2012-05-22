@@ -220,7 +220,6 @@
                              (merge cemerick.pomegranate.aether/maven-central
                                     {"clojars" "http://clojars.org/repo"}
                                     (:repositories project)))
-;;            - (println project)
             dependencies (resolve-dependencies
                           :coordinates  [coordinates]
                           :repositories repositories)
@@ -233,4 +232,5 @@
                             {:name    (:name config (get-debian-name artifact-id))
                              :version (:version config version)
                              :files   [jar-file]})
+             :name         artifact-id
              :dependencies (get dependencies coordinates))))))))
