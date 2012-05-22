@@ -34,11 +34,9 @@
   [project dependency version args]
   (let [artifact-id           (get-debian-name dependency)
         m                     (and (not-empty args) (apply assoc {} args))
-        _ (println m)
         override              (if (contains? m :debian)
                                 (:debian m)
                                 (get-in project [:debian :overrides artifact-id]))
-        _ (println override)
         [artifact-id version] (if override
                                 (let [[deb-name deb-ver] override
                                       deb-ver            (if-not (nil? deb-ver)
