@@ -211,10 +211,12 @@
       (and (jar/jar project)
            (build-package project))
       (let [[artifact-id version & rest] args
-            artifact-id  (symbol artifact-id)
-            config       (if-not (empty? rest)
-                           (reduce (fn [m [k v]]
-                                     (assoc m (keywordize k) v)) {} (partition 2 rest)))
+            artifact-id   (symbol artifact-id)
+            _ (println )
+            artifact-name (symbol (last (clojure.string/split (str artifact-id) #"/")))
+            config        (if-not (empty? rest)
+                            (reduce (fn [m [k v]]
+                                      (assoc m (keywordize k) v)) {} (partition 2 rest)))
             coordinates  [artifact-id version]
             repositories (or (parse-repositories config)
                              (merge cemerick.pomegranate.aether/maven-central
@@ -232,5 +234,5 @@
                             {:name    (:name config (get-debian-name artifact-id))
                              :version (:version config version)
                              :files   [jar-file]})
-             :name         artifact-id
+             :name          artifact-name
              :dependencies (get dependencies coordinates))))))))
