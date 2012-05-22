@@ -34,7 +34,9 @@
   [project dependency version args]
   (let [artifact-id           (get-debian-name dependency)
         m                     (and (not-empty args) (apply assoc {} args))
-        override              (:debian m)
+        override              (if (contains? :debian m)
+                                (:debian m)
+                                (get-in project [:debian :overrides artifact-id]))
         [artifact-id version] (if override
                                 (let [[deb-name deb-ver] override
                                       deb-ver            (if-not (nil? deb-ver)
@@ -218,6 +220,7 @@
                              (merge cemerick.pomegranate.aether/maven-central
                                     {"clojars" "http://clojars.org/repo"}
                                     (:repositories project)))
+;;            - (println project)
             dependencies (resolve-dependencies
                           :coordinates  [coordinates]
                           :repositories repositories)
@@ -225,7 +228,8 @@
         (when-not (:dry-run config)
           (build-package
            (assoc project
-             :debian (merge config
+             :debian (merge (:debian project)
+                            config
                             {:name    (:name config (get-debian-name artifact-id))
                              :version (:version config version)
                              :files   [jar-file]})
