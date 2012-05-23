@@ -36,7 +36,7 @@
 (def homepage               "http://google.com")
 (def architecture           "all")
 (def description            "The Osterhase was too lazy to provide a description")
-(def files                  "*.jar")
+(def files                  "target/*.jar")
 (def target-subdir          "target")
 (def install-dir            "/usr/share/java")
 (def apt-config-file        "config/apt.conf")
@@ -47,9 +47,11 @@
 (defn path
   [element & more-elements]
   (reduce (fn [path s]
-            (if (.endsWith path "/")
-              (str path s)
-              (str path "/" s)))
+            (if s
+              (if (.endsWith path "/")
+                (str path s)
+                (str path "/" s))
+              path))
           element
           more-elements))
 

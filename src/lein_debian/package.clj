@@ -122,6 +122,7 @@
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
+        files        (:files config files)
         extras-dir   (path base-dir (:extra-path config "debian"))
         target-dir   (:target-path project (path base-dir target-subdir))
         package-dir  (path target-dir (str pkg-name "-" version))
@@ -168,7 +169,10 @@
       ""
       "install:"
       "\t@mkdir -p $(INSTALLDIR)"
-      (copy-files target-dir "$(INSTALLDIR)" (:files config files))
+      (copy-files target-dir "$(INSTALLDIR)"
+                  (path (if-not (.startsWith files "/")
+                          base-dir)
+                        files))
       (apply copy-files extras-dir "$(DESTDIR)" (:extra-files config))
       (link-artifact files artifact-id))
     ((juxt write-preinst write-postinst write-prerm write-postrm)
@@ -212,7 +216,6 @@
            (build-package project))
       (let [[artifact-id version & rest] args
             artifact-id   (symbol artifact-id)
-            _ (println )
             artifact-name (symbol (last (clojure.string/split (str artifact-id) #"/")))
             config        (if-not (empty? rest)
                             (reduce (fn [m [k v]]
