@@ -77,7 +77,7 @@
   [commands]
   (let [commands (str/trim commands)]
     (if (.startsWith commands "!")
-      (str/join "\n" (slurp (.substring commands 1)))
+      (slurp (.substring commands 1))
       commands)))
 
 (defn install-helper
@@ -85,15 +85,15 @@
   (if-let [commands (or (type config))]
     (let [commands  (maybe-from-script commands)]
       (spit (path debian-dir script)
-            (reduce str ["#!/bin/sh"
-                         "set -e"
-                         "case \"$1\" in"
-                         (str cases ")")
-                         commands
-                         "    ;;"
-                         "esac"
-                         "#DEBHELPER#"
-                         "exit 0"])))))
+            (str/join "\n" ["#!/bin/sh"
+                            "set -e"
+                            "case \"$1\" in"
+                            (str cases ")")
+                            commands
+                            "    ;;"
+                            "esac"
+                            "#DEBHELPER#"
+                            "exit 0"])))))
 
 (defn write-preinst
   [debian-dir config]
