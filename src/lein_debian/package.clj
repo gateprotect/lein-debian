@@ -63,14 +63,13 @@
     (str/join " "
       (concat
        ["\t@cd" from "&&"
-        copy "-a" "--parents"]
+        copy "-a"]
        args
        [to]))))
 
 (defn- link-artifact
   [files artifact-id]
-  (let [re            (java.util.regex.Pattern/compile (str artifact-id "-.*.jar"))
-        artifact-file (str artifact-id "-*.jar")]
+  (let [artifact-file (str artifact-id "-*.jar")]
     (str "\t@cd $(INSTALLDIR) && ln -snf " artifact-file " " artifact-id ".jar")))
 
 (defn maybe-from-script
@@ -112,7 +111,6 @@
   (install-helper
    debian-dir config "postrm" :post-remove
    "purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear"))
-
 
 (defn build-package
   [project]
@@ -173,7 +171,8 @@
                   (path (if-not (.startsWith files "/")
                           base-dir)
                         files))
-      (apply copy-files extras-dir "$(DESTDIR)" (:extra-files config))
+      (when-not (empty? (:extra-files config))
+        (apply copy-files extras-dir "$(DESTDIR)" "--parents" (:extra-files config)))
       (link-artifact files artifact-id))
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
