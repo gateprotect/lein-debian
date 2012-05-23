@@ -34,7 +34,9 @@
   [project dependency version args]
   (let [artifact-id           (get-debian-name dependency)
         m                     (and (not-empty args) (apply assoc {} args))
-        override              (:debian m)
+        override              (if (contains? m :debian)
+                                (:debian m)
+                                (get-in project [:debian :overrides artifact-id]))
         [artifact-id version] (if override
                                 (let [[deb-name deb-ver] override
                                       deb-ver            (if-not (nil? deb-ver)
@@ -55,9 +57,15 @@
              (build-debian-name project dependency version rest)))
    (get-in project [:debian :dependencies])))
 
-(defn- config->files [config]
-  (concat (:extra-files config)
-          (:files config [files])))
+(defn- copy-files [from to & args]
+  (if (empty? args)
+    ""
+    (str/join " "
+      (concat
+       ["\t@cd" from "&&"
+        copy "-a" "--parents"]
+       args
+       [to]))))
 
 (defn- link-artifact
   [files artifact-id]
@@ -69,7 +77,7 @@
   [commands]
   (let [commands (str/trim commands)]
     (if (.startsWith commands "!")
-      (str/join "\n" (slurp (.substring commands 1)))
+      (slurp (.substring commands 1))
       commands)))
 
 (defn install-helper
@@ -77,15 +85,15 @@
   (if-let [commands (or (type config))]
     (let [commands  (maybe-from-script commands)]
       (spit (path debian-dir script)
-            (reduce str ["#!/bin/sh"
-                         "set -e"
-                         "case \"$1\" in"
-                         (str cases ")")
-                         commands
-                         "    ;;"
-                         "esac"
-                         "#DEBHELPER#"
-                         "exit 0"])))))
+            (str/join "\n" ["#!/bin/sh"
+                            "set -e"
+                            "case \"$1\" in"
+                            (str cases ")")
+                            commands
+                            "    ;;"
+                            "esac"
+                            "#DEBHELPER#"
+                            "exit 0"])))))
 
 (defn write-preinst
   [debian-dir config]
@@ -114,6 +122,8 @@
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
+        files        (:files config files)
+        extras-dir   (path base-dir (:extra-path config "debian"))
         target-dir   (:target-path project (path base-dir target-subdir))
         package-dir  (path target-dir (str pkg-name "-" version))
         debian-dir   (path package-dir "debian")
@@ -159,16 +169,12 @@
       ""
       "install:"
       "\t@mkdir -p $(INSTALLDIR)"
-      (str/join " "
-        (concat
-          ["\t@cd" target-dir "&&"
-           copy "-a"]
-          (map (fn [f]
-                 (path (if (.startsWith f "/") "/" base-dir) f))
-               (config->files config))
-          ["$(INSTALLDIR)"]))
+      (copy-files target-dir "$(INSTALLDIR)"
+                  (path (if-not (.startsWith files "/")
+                          base-dir)
+                        files))
+      (apply copy-files extras-dir "$(DESTDIR)" (:extra-files config))
       (link-artifact files artifact-id))
-    
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
     (sh rm "-fr" "debhelper.log" :dir debian-dir )
@@ -209,10 +215,11 @@
       (and (jar/jar project)
            (build-package project))
       (let [[artifact-id version & rest] args
-            artifact-id  (symbol artifact-id)
-            config       (if-not (empty? rest)
-                           (reduce (fn [m [k v]]
-                                     (assoc m (keywordize k) v)) {} (partition 2 rest)))
+            artifact-id   (symbol artifact-id)
+            artifact-name (symbol (last (clojure.string/split (str artifact-id) #"/")))
+            config        (if-not (empty? rest)
+                            (reduce (fn [m [k v]]
+                                      (assoc m (keywordize k) v)) {} (partition 2 rest)))
             coordinates  [artifact-id version]
             repositories (or (parse-repositories config)
                              (merge cemerick.pomegranate.aether/maven-central
@@ -225,8 +232,10 @@
         (when-not (:dry-run config)
           (build-package
            (assoc project
-             :debian (merge config
+             :debian (merge (:debian project)
+                            config
                             {:name    (:name config (get-debian-name artifact-id))
                              :version (:version config version)
                              :files   [jar-file]})
+             :name          artifact-name
              :dependencies (get dependencies coordinates))))))))

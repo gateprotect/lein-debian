@@ -47,9 +47,11 @@
 (defn path
   [element & more-elements]
   (reduce (fn [path s]
-            (if (.endsWith path "/")
-              (str path s)
-              (str path "/" s)))
+            (if s
+              (if (.endsWith path "/")
+                (str path s)
+                (str path "/" s))
+              path))
           element
           more-elements))
 
