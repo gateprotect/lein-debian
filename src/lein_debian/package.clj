@@ -160,7 +160,6 @@
       "#!/usr/bin/make -f"
       "%:"
       "\tdh $@")
-    
     (write-lines* (path package-dir "Makefile")
       (str "INSTALLDIR := " (path "$(DESTDIR)" install-dir))
       "build:"
@@ -168,9 +167,9 @@
       "install:"
       "\t@mkdir -p $(INSTALLDIR)"
       (copy-files target-dir "$(INSTALLDIR)"
-                  (path (if-not (.startsWith files "/")
-                          base-dir)
-                        files))
+                  (if-not (.startsWith files "/")
+                    (path  base-dir files)
+                    files))
       (when-not (empty? (:extra-files config))
         (apply copy-files extras-dir "$(DESTDIR)" "--parents" (:extra-files config)))
       (link-artifact files artifact-id))
@@ -235,6 +234,6 @@
                             config
                             {:name    (:name config (get-debian-name artifact-id))
                              :version (:version config version)
-                             :files   [jar-file]})
+                             :files   jar-file})
              :name          artifact-name
              :dependencies (get dependencies coordinates))))))))

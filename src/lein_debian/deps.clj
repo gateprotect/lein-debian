@@ -1,5 +1,6 @@
 (ns lein-debian.deps
-  (:require [leiningen.deps :as leiningen])
+  (:require [leiningen.deps     :as leiningen]
+            [clojure.stacktrace :as trace])
   (:use [cemerick.pomegranate.aether :only (resolve-dependencies)]
         [lein-debian.package         :only (package)]))
 
@@ -26,4 +27,5 @@
       (try
         (package project (concat [nil name version] args))
         (catch java.lang.RuntimeException e
-          (println "Failed to build Debian package for " name ":" (.getMessage e)))))))
+          (println "Failed to build Debian package for " name ":" (.getMessage e))
+          (trace/print-stack-trace e))))))
