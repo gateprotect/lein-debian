@@ -4,7 +4,7 @@ A Leiningen plugin to build Debian packages
 
 ## Usage
 
-Put `[lein-debian "0.1.0-SNAPSHOT"]` into the `:plugins` vector of
+Put `[lein-debian "0.2.0-SNAPSHOT"]` into the `:plugins` vector of
 your project.clj.
 
 This plugin is capable of both, packaging build products into a Debian
@@ -94,7 +94,11 @@ Debian so, we use:
 
       $ lein debian package com.sun.jna/jna "3.0.9" :name libjna-java :version "3.0.9-1"
 
-There are multiple options that can in the project to override default
+You can package *all* of a projects dependencies with the "deps" task:
+
+      $ lein debian deps
+
+There are multiple options that can be set in the project to override default
 settings. These should be specified as a map using the :debian key in
 project.clj. Alternatively, they can also be used as an argument for the
 standalone "repackaging" case just described above. Note however, that
@@ -109,10 +113,20 @@ given dependency.
                  variables)
  :architecture  (defaults to "all")
  :files         files to package. Defaults to "*.jar"
+ :extra-files   A list of extra files to package
  :build-depends
  :standards-version
  :homepage
 
+Debian install scripts: these can be specified inline as a string, or if the string starts with
+a bang (!) then the string is interpreted as a file name to read the script from:
+
+ :pre-install   
+ :post-install
+ :pre-remove
+ :post-remove
+
+You can specify extra dependencies and overrides in the debian section as well. 
 
 ## License
 
