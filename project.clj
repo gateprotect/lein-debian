@@ -1,4 +1,4 @@
-(defproject lein-debian "0.2.0-SNAPSHOT"
+(defproject lein-debian "0.3.0-SNAPSHOT"
   :description "Leiningen plugin to generate Debian packages"
   :url "http://github.com/erickg/lein-debian"
   :license {:name "Eclipse Public License"
