@@ -232,9 +232,10 @@
            (assoc project
              :debian (merge (:debian project)
                             config
-                            {:name        (:name config (get-debian-name artifact-id))
-                             :version     (:version config version)
-                             :files       jar-file
-                             :extra-files []})
+                            {:name         (:name config (get-debian-name artifact-id))
+                             :version      (:version config version)
+                             :files        jar-file
+                             :extra-files  []
+                             :dependencies []})
              :name          artifact-name
              :dependencies (get dependencies coordinates))))))))
