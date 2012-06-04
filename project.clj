@@ -6,4 +6,4 @@
   :eval-in-leiningen true
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [com.cemerick/pomegranate "0.0.11"]
-                 [midje "1.3.1" :scope "test"]])
+                 [midje "1.4.0" :scope "test"]])
