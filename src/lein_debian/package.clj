@@ -7,15 +7,37 @@
   (:import [java.util Date Properties Map Locale]
            [java.text SimpleDateFormat]))
 
+(def less-than    " (<= ")
+(def greater-than " (>= ")
+
+(defn version-spec
+  [name op version]
+  (str name
+       op
+       (if (Character/isDigit (first version))
+         version
+         (str "1.0-" version))
+       ")"))
+
 (defn- package-spec
   [package]
-  (str (first package)
-       (if-let [version (second package)]
-         (str " (>= " version ")"))))
+  (let [n (first package)]
+    (when-let [version (second package)]
+      (if (vector? version)
+        (vector (version-spec
+               n greater-than (first version))
+             (version-spec
+               n less-than (second version)))
+        (version-spec n greater-than version)))))
+
+(defn- package-specs [dependencies]
+  (->> dependencies
+       (map package-spec)
+       (flatten)))
 
 (defn- format-dependencies
   [dependencies]
-  (str/join ", " (conj (map package-spec dependencies) "${misc:Depends}")))
+  (str/join ", " (conj (package-specs dependencies) "${misc:Depends}")))
 
 (defn- format-description
   [configuration]
@@ -52,10 +74,10 @@
 (defn- get-dependencies
   [project]
   (concat
-   (filter (comp not nil?)
-           (for [[dependency version & rest] (:dependencies project)]
-             (build-debian-name project dependency version rest)))
-   (get-in project [:debian :dependencies])))
+    (filter (comp not nil?)
+            (for [[dependency version & rest] (:dependencies project)]
+              (build-debian-name project dependency version rest)))
+    (get-in project [:debian :dependencies])))
 
 (defn- copy-files [from to & args]
   (if (empty? args)
@@ -144,7 +166,7 @@
                   (str "Description: "       (format-description config))])
 
     (when-not (empty? dependencies)
-      (apply println "Depends on" (map package-spec dependencies)))
+      (apply println "Depends on" (package-specs dependencies)))
 
     (write-lines* (path debian-dir "changelog")
       (str pkg-name " (" version ") " (str/join " " dists)  "; urgency=low")

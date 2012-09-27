@@ -55,11 +55,25 @@
           element
           more-elements))
 
+(defn build-single-version [version build-num]
+  (let [version (str/replace version "-SNAPSHOT" "")]
+    (str/join [version (if build-num (str "." build-num))])))
+
+(defn build-version-range [version build-num]
+  (let [[min,max] (-> version
+                      (.substring 1 (- (.length version) 1))
+                      (str/split #","))]
+    (vector
+      (build-single-version min build-num)
+      (build-single-version max build-num))))
+
 (defn build-debian-version
   [version build-num]
-  (if version
-    (let [version (str/replace version "-SNAPSHOT" "")]
-      (str/join [version (if build-num (str "." build-num))]))))
+  (println "VERSION:" version)
+  (when version
+    (if (.startsWith version "[")
+      (build-version-range version build-num)
+      (build-single-version version build-num))))
 
 (defn make-version
   [project]
