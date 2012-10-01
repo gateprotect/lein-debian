@@ -21,15 +21,15 @@
 
 (defn- package-spec
   [package]
-  (let [n (first package)]
-    (when-let [version (second package)]
+  (if-let [n (first package)]
+    (if-let [version (second package)]
       (if (vector? version)
         (vector (version-spec
                n greater-than (first version))
              (version-spec
                n less-than (second version)))
-        (version-spec n greater-than version)))
-    package))
+        (version-spec n greater-than version))
+      n)))
 
 (defn- package-specs [dependencies]
   (->> dependencies
