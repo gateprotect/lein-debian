@@ -28,7 +28,8 @@
                n greater-than (first version))
              (version-spec
                n less-than (second version)))
-        (version-spec n greater-than version)))))
+        (version-spec n greater-than version)))
+    package))
 
 (defn- package-specs [dependencies]
   (->> dependencies
@@ -244,7 +245,7 @@
             repositories (or (parse-repositories config)
                              (merge cemerick.pomegranate.aether/maven-central
                                     {"clojars" "http://clojars.org/repo"}
-                                    (:repositories project)))
+                                    (apply merge (for [[k v] (:repositories project)] {k v}))))
             dependencies (resolve-dependencies
                           :coordinates  [coordinates]
                           :repositories repositories)

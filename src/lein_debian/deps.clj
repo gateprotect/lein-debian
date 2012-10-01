@@ -25,7 +25,9 @@
                             :repositories repositories))]
     (doseq [[name version] dependencies :when (not (excluded? project name))]
       (try
-        (package project (concat [nil name version] args))
+        (package project
+                 (concat [nil name version]
+                         args))
         (catch java.lang.RuntimeException e
           (println "Failed to build Debian package for " name ":" (.getMessage e))
           (trace/print-stack-trace e))))))
