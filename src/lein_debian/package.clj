@@ -137,9 +137,10 @@
 
 (defn build-package
   [project]
-  (let [dependencies (get-dependencies project)
-        artifact-id  (:name project)
+  (let [artifact-id  (:name project)
         config       (:debian project)
+        ign-jardeps  (:ignore-maven-dependencies config)
+        dependencies (if ign-jardeps [] (get-dependencies project))
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
