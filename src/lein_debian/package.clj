@@ -1,5 +1,6 @@
 (ns lein-debian.package
   (:require [clojure.string              :as    str]
+            [leiningen.uberjar           :as    uberjar]
             [leiningen.jar               :as    jar])
   (:use     [clojure.java.shell          :only (sh)]
             [lein-debian.common]
@@ -135,16 +136,27 @@
    debian-dir config "postrm" :post-remove
    "purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear"))
 
+(defmulti get-archive-path (fn [x _] x))
+
+(defmethod get-archive-path :jar
+  [_ project]
+  (jar/get-jar-filename project))
+
+(defmethod get-archive-path :uberjar
+  [_ project]
+  (jar/get-jar-filename project true))
+
 (defn build-package
   [project]
   (let [artifact-id  (:name project)
         config       (:debian project)
+        pkg-type     (:archive-type config :jar)
         ign-jardeps  (:ignore-maven-dependencies config)
         dependencies (if ign-jardeps [] (get-dependencies project))
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
-        files        (:files config files)
+        files        (:files config (get-archive-path pkg-type project))
         extras-dir   (path base-dir (:extra-path config "debian"))
         target-dir   (:target-path project (path base-dir target-subdir))
         package-dir  (path target-dir (str pkg-name "-" version))
@@ -230,12 +242,27 @@
      (.substring str 1)
      str)))
 
+(defn- get-pkg-builder [project]
+  (condp = (:archive-type (:debian project) :jar)
+    :jar jar/jar
+    :uberjar uberjar/uberjar
+    jar/jar))
+
+(defmulti get-pkg-builder #(:archive-type (:debian %) :jar))
+
+(defmethod get-pkg-builder :jar
+  [_] jar/jar)
+
+(defmethod get-pkg-builder :uberjar
+  [_] uberjar/uberjar)
+
 (defn package
   [project args]
   (let [args (next args) ]
     (if (nil? args)
-      (and (jar/jar project)
-           (build-package project))
+      (let [pkg-builder (get-pkg-builder project)]
+        (and (pkg-builder project)
+             (build-package project)))
       (let [[artifact-id version & rest] args
             artifact-id   (symbol artifact-id)
             artifact-name (symbol (last (clojure.string/split (str artifact-id) #"/")))
