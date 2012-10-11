@@ -3,6 +3,7 @@
             [leiningen.uberjar           :as    uberjar]
             [leiningen.jar               :as    jar])
   (:use     [clojure.java.shell          :only (sh)]
+            [clojure.java.io             :only (file)]
             [lein-debian.common]
             [cemerick.pomegranate.aether :only (resolve-dependencies)])
   (:import [java.util Date Properties Map Locale]
@@ -92,9 +93,10 @@
        [to]))))
 
 (defn- link-artifact
-  [files artifact-id]
-  (let [artifact-file (str artifact-id "-*.jar")]
-    (str "\t@cd $(INSTALLDIR) && ln -snf " artifact-file " " artifact-id ".jar")))
+  ([artifact-file artifact-id prefix-dir]
+     (str "\t@cd $(INSTALLDIR) && ln -snf " install-dir "/" artifact-file " " prefix-dir artifact-id ".jar"))
+  ([artifact-file artifact-id]
+     (link-artifact artifact-file artifact-id "")))
 
 (defn maybe-from-script
   [commands]
@@ -161,6 +163,7 @@
         target-dir   (:target-path project (path base-dir target-subdir))
         package-dir  (path target-dir (str pkg-name "-" version))
         debian-dir   (path package-dir "debian")
+        prefix-dir   (:prefix-archive-dir config)
         install-dir  (:install-dir config install-dir)
         arch         (:architecture config architecture)
         dists        (:distributions config [distribution])]
@@ -208,7 +211,9 @@
                     files))
       (when-not (empty? (:extra-files config))
         (apply copy-files extras-dir "$(DESTDIR)" "--parents" (:extra-files config)))
-      (link-artifact files artifact-id))
+      (when prefix-dir
+        (str "\tmkdir -p $(INSTALLDIR)/" prefix-dir))
+      (link-artifact (-> files file (.getName)) artifact-id prefix-dir))
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
     (sh rm "-fr" "debhelper.log" :dir debian-dir )
