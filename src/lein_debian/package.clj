@@ -75,12 +75,15 @@
       [artifact-id (build-debian-version version (:build-number project))])))
 
 (defn- get-dependencies
-  [project]
-  (concat
-    (filter (comp not nil?)
-            (for [[dependency version & rest] (:dependencies project)]
-              (build-debian-name project dependency version rest)))
-    (get-in project [:debian :dependencies])))
+  ([project ignore-jar-deps]
+     (concat
+      (if ignore-jar-deps []
+          (filter (comp not nil?)
+                  (for [[dependency version & rest] (:dependencies project)]
+                    (build-debian-name project dependency version rest))))
+      (get-in project [:debian :dependencies])))
+  ([project]
+     (get-dependencies false)))
 
 (defn- copy-files [from to & args]
   (if (empty? args)
@@ -154,7 +157,7 @@
         config       (:debian project)
         pkg-type     (:archive-type config :jar)
         ign-jardeps  (:ignore-maven-dependencies config)
-        dependencies (if ign-jardeps [] (get-dependencies project))
+        dependencies (get-dependencies project ign-jardeps)
         pkg-name     (:name config (get-debian-name artifact-id))
         version      (make-version (if (contains? config :version) config project))
         base-dir     (:root project (str/trim (:out (sh "pwd"))))
