@@ -77,10 +77,11 @@
 (defn- get-dependencies
   ([project ignore-jar-deps]
      (concat
-      (if ignore-jar-deps []
-          (filter (comp not nil?)
-                  (for [[dependency version & rest] (:dependencies project)]
-                    (build-debian-name project dependency version rest))))
+      (filter (comp not nil?)
+              (for [[dependency version & rest] (:dependencies project)
+                    :when (or (not ignore-jar-deps)
+                              (some #{:debian} rest))]
+                (build-debian-name project dependency version rest)))
       (get-in project [:debian :dependencies])))
   ([project]
      (get-dependencies false)))
