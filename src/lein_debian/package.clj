@@ -152,6 +152,10 @@
   [_ project]
   (jar/get-jar-filename project true))
 
+(defmethod get-archive-path :overjar
+  [_ project]
+  (jar/get-jar-filename project true))
+
 (defn build-package
   [project]
   (let [artifact-id  (:name project)
@@ -251,13 +255,15 @@
      (.substring str 1)
      str)))
 
-(defn- get-pkg-builder [project]
-  (condp = (:archive-type (:debian project) :jar)
-    :jar jar/jar
-    :uberjar uberjar/uberjar
-    jar/jar))
-
 (defmulti get-pkg-builder #(:archive-type (:debian %) :jar))
+
+(defmethod get-pkg-builder :default
+  [project]
+  (if-let [archive-type (:archive-type (:debian project))]
+    (if-let [builder (name archive-type)]
+      (do
+        (require (symbol (str "leiningen." builder)))
+        (resolve (symbol (str "leiningen." builder) builder))))))
 
 (defmethod get-pkg-builder :jar
   [_] jar/jar)
