@@ -41,7 +41,7 @@
 (def install-dir            "/usr/share/java")
 (def apt-config-file        "config/apt.conf")
 (def apt-move-config-file   "config/apt-move.conf")
-(def distribution           "squeeze")
+(def distribution           "wheezy")
 (def pkg-config-file        (str "config/" distribution "-packages.conf"))
 
 (defn path
@@ -55,31 +55,50 @@
           element
           more-elements))
 
-(defn build-single-version [version build-num]
-  (let [version (str/replace version "-SNAPSHOT" "")]
-    (str/join [version (if build-num (str "." build-num))])))
+(defn snapshot? [version]
+  (.endsWith version "SNAPSHOT"))
 
-(defn build-version-range [version build-num]
+(def release? (complement snapshot?))
+
+(defn maybe-add [add? tag version]
+  (if (and tag (add? version))
+    (str version tag)
+    version))
+
+(defn strip [version]
+  (str/replace version "-SNAPSHOT" ""))
+
+(defn build-single-version [version build-number version-tag]
+  (->> version
+       (strip)
+       (maybe-add snapshot? (str "." build-number))
+       (maybe-add release?  version-tag)))
+
+(defn build-version-range [version build-num version-tag]
   (let [[min,max] (-> version
                       (.substring 1 (- (.length version) 1))
                       (str/split #","))]
     (vector
-      (build-single-version min build-num)
-      (build-single-version max build-num))))
+      (build-single-version min build-num version-tag)
+      (build-single-version max build-num version-tag))))
 
 (defn build-debian-version
-  [version build-num]
-  (println "VERSION:" version)
+  [version & [build-num version-tag]]
   (when version
     (if (.startsWith version "[")
-      (build-version-range version build-num)
-      (build-single-version version build-num))))
+      (build-version-range version build-num version-tag)
+      (build-single-version version build-num version-tag))))
+
+(defn env [s]
+  (System/getenv s))
 
 (defn make-version
   [project]
-  (let [version   (:version project)
-        build-num (:build-number project (System/getenv "BUILD_NUMBER"))]
-    (build-debian-version version build-num)))
+  (println "PROJECT:" project)
+  (let [version     (:version project)
+        build-num   (:build-number project (env "BUILD_NUMBER"))
+        version-tag (:version-tag  project (env "BUILD_TAG"))]
+    (build-debian-version version build-num version-tag)))
 
 (defn get-debian-name
   [dependency]

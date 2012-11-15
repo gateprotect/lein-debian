@@ -273,7 +273,7 @@
 
 (defn package
   [project args]
-  (let [args (next args) ]
+  (let [args (next args)]
     (if (nil? args)
       (let [pkg-builder (get-pkg-builder project)]
         (and (pkg-builder project)
