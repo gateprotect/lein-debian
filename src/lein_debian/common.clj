@@ -92,9 +92,6 @@
   (let [version     (:version project)
         build-num   (:build-number project (env "BUILD_NUMBER"))
         version-tag (:version-tag  project (env "BUILD_TAG"))]
-    (prn {:build-num build-num
-          :version version
-          :version-tag version-tag})
     (build-debian-version version build-num version-tag)))
 
 (defn get-debian-name
