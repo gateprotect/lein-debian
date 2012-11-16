@@ -60,19 +60,14 @@
 
 (def release? (complement snapshot?))
 
-(defn maybe-add [add? tag version]
-  (if (and tag (add? version))
-    (str version tag)
-    version))
-
 (defn strip [version]
   (str/replace version "-SNAPSHOT" ""))
 
 (defn build-single-version [version build-number version-tag]
-  (->> version
-       (strip)
-       (maybe-add snapshot? (str "." build-number))
-       (maybe-add release?  version-tag)))
+  (str (strip version)
+       (if (snapshot? version)
+         (str "." build-number)
+         version-tag))) 
 
 (defn build-version-range [version build-num version-tag]
   (let [[min,max] (-> version
@@ -94,10 +89,12 @@
 
 (defn make-version
   [project]
-  (println "PROJECT:" project)
   (let [version     (:version project)
         build-num   (:build-number project (env "BUILD_NUMBER"))
         version-tag (:version-tag  project (env "BUILD_TAG"))]
+    (prn {:build-num build-num
+          :version version
+          :version-tag version-tag})
     (build-debian-version version build-num version-tag)))
 
 (defn get-debian-name
