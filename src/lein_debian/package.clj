@@ -1,7 +1,8 @@
 (ns lein-debian.package
-  (:require [clojure.string              :as    str]
-            [leiningen.uberjar           :as    uberjar]
-            [leiningen.jar               :as    jar])
+  (:require [clojure.string              :as str]
+            [leiningen.uberjar           :as uberjar]
+            [leiningen.jar               :as jar]
+            [cemerick.pomegranate.aether :as aether])
   (:use     [clojure.java.shell          :only (sh)]
             [clojure.java.io             :only (file)]
             [lein-debian.common]
@@ -156,6 +157,29 @@
   [_ project]
   (jar/get-jar-filename project true))
 
+(defn- group
+  [group-artifact]
+  (or (namespace group-artifact) (name group-artifact)))
+
+(defn- my-coord-string
+  [[group-artifact version & {:keys [classifier extension] :or {extension "war"}}]]
+  (->> [(group group-artifact) (name group-artifact) extension classifier version]
+    (remove nil?)
+    (interpose \:)
+    (apply str)))
+
+(defmethod get-archive-path :war
+  [_ project]
+  (if-let [wardep (get-in project [:debian :archive])]
+    (with-redefs [aether/coordinate-string my-coord-string]
+      (let [deps (aether/resolve-dependencies
+                  :coordinates [wardep]
+                  :repositories (:repositories project) )]
+        (-> (aether/dependency-files (filter #(= (first (first %))
+                                                 (first wardep)) deps))
+            first
+            (.getPath))))))
+
 (defn build-package
   [project]
   (let [artifact-id  (:name project)
@@ -270,6 +294,9 @@
 
 (defmethod get-pkg-builder :uberjar
   [_] uberjar/uberjar)
+
+(defmethod get-pkg-builder :war
+  [_] (constantly true))
 
 (defn package
   [project args]
