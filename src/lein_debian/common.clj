@@ -65,9 +65,9 @@
 
 (defn build-single-version [version build-number version-tag]
   (str (strip version)
-       (if (snapshot? version)
+       (if (and (snapshot? version) build-number)
          (str "." build-number)
-         version-tag))) 
+         version-tag)))
 
 (defn build-version-range [version build-num version-tag]
   (let [[min,max] (-> version
@@ -92,6 +92,7 @@
   (let [version     (:version project)
         build-num   (:build-number project (env "BUILD_NUMBER"))
         version-tag (:version-tag  project (env "BUILD_TAG"))]
+    (println build-num version-tag)
     (build-debian-version version build-num version-tag)))
 
 (defn get-debian-name
