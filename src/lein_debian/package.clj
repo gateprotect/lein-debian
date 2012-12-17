@@ -168,6 +168,10 @@
     (interpose \:)
     (apply str)))
 
+(defmethod get-archive-path :none
+  [_ project]
+  nil)
+
 (defmethod get-archive-path :war
   [_ project]
   (if-let [wardep (get-in project [:debian :archive])]
@@ -237,15 +241,17 @@
       ""
       "install:"
       "\t@mkdir -p $(INSTALLDIR)"
-      (copy-files target-dir "$(INSTALLDIR)"
-                  (if-not (.startsWith files "/")
-                    (path  base-dir files)
-                    files))
+      (when files
+        (copy-files target-dir "$(INSTALLDIR)"
+                    (if-not (.startsWith files "/")
+                      (path  base-dir files)
+                      files)))
       (when-not (empty? (:extra-files config))
         (apply copy-files extras-dir "$(DESTDIR)" "--parents" (:extra-files config)))
       (when prefix-dir
         (str "\tmkdir -p $(INSTALLDIR)/" prefix-dir))
-      (link-artifact (-> files file (.getName)) artifact-id prefix-dir))
+      (when files
+        (link-artifact (-> files file (.getName)) artifact-id prefix-dir)))
     ((juxt write-preinst write-postinst write-prerm write-postrm)
      debian-dir config)
     (sh rm "-fr" "debhelper.log" :dir debian-dir )
@@ -296,6 +302,9 @@
   [_] uberjar/uberjar)
 
 (defmethod get-pkg-builder :war
+  [_] (constantly true))
+
+(defmethod get-pkg-builder :none
   [_] (constantly true))
 
 (defn package
