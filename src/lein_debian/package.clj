@@ -111,19 +111,23 @@
       commands)))
 
 (defn install-helper
-  [debian-dir config script type cases]
-  (if-let [commands (or (type config))]
-    (let [commands  (maybe-from-script commands)]
-      (spit (path debian-dir script)
-            (str/join "\n" ["#!/bin/sh"
-                            "set -e"
-                            "case \"$1\" in"
-                            (str cases ")")
-                            commands
-                            "    ;;"
-                            "esac"
-                            "#DEBHELPER#"
-                            "exit 0"])))))
+  ([debian-dir config script type cases]
+     (install-helper debian-dir config script type cases true))
+  ([debian-dir config script type cases wrap-sh]
+     (if-let [commands (or (type config))]
+       (let [commands  (maybe-from-script commands)]
+         (spit (path debian-dir script)
+               (if wrap-sh
+                 (str/join "\n" ["#!/bin/sh"
+                                 "set -e"
+                                 "case \"$1\" in"
+                                 (str cases ")")
+                                 commands
+                                 "    ;;"
+                                 "esac"
+                                 "#DEBHELPER#"
+                                 "exit 0"])
+                 commands))))))
 
 (defn write-preinst
   [debian-dir config]
@@ -142,6 +146,10 @@
   (install-helper
    debian-dir config "postrm" :post-remove
    "purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear"))
+
+(defn write-triggers
+  [debian-dir config]
+  (install-helper debian-dir config "triggers" :triggers "" false))
 
 (defmulti get-archive-path (fn [x _] x))
 
@@ -252,7 +260,7 @@
         (str "\tmkdir -p $(INSTALLDIR)/" prefix-dir))
       (when files
         (link-artifact (-> files file (.getName)) artifact-id prefix-dir)))
-    ((juxt write-preinst write-postinst write-prerm write-postrm)
+    ((juxt write-preinst write-postinst write-prerm write-postrm write-triggers)
      debian-dir config)
     (sh rm "-fr" "debhelper.log" :dir debian-dir )
     (let [r (sh debuild "--no-tgz-check" :dir debian-dir)]
